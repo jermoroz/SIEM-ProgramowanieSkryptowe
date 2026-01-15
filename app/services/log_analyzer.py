@@ -65,7 +65,8 @@ class LogAnalyzer:
             # 3. Jeśli JEST w bazie -> Zaktualizuj mu last_seen.
             else:
                 ip_entry.last_seen = datetime.now(timezone.utc)
-                # -------------------------ZADANIE DODATKOWE 1-------------------------------
+            
+            # -------------------------ZADANIE DODATKOWE 1-------------------------------
             if ip_entry.status == 'UNKNOWN':
                 ten_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
                 
@@ -78,22 +79,20 @@ class LogAnalyzer:
 
                 if other_hosts_attacked > 0:
                     ip_entry.status = 'BANNED'
-
-                #------------------------------------------------------------------------
-
+            
             
             # 4. Ustal poziom alertu (severity) i treść wiadomości (message):
             #    - Domyślny poziom: 'WARNING'.
-            #    - Jeśli IP ma status 'BANNED' -> Zmień poziom na 'CRITICAL' i dopisz to w treści.
-                if ip_entry.status == 'BANNED':
-                    severity = 'CRITICAL'
-                    message = f"ALERT KRYTYCZNY - Próba logowania ze zbanowanego IP ({ip})"
+            # #    - Jeśli IP ma status 'BANNED' -> Zmień poziom na 'CRITICAL' i dopisz to w treści.
+            if ip_entry.status == 'BANNED':
+                severity = 'CRITICAL'
+                message = f"ALERT KRYTYCZNY - Próba logowania ze zbanowanego IP ({ip})"
             
             #    - Jeśli IP ma status 'TRUSTED' -> Możesz pominąć alert (continue) lub ustawić 'INFO'.
-                elif ip_entry.status == 'TRUSTED':
-                    #continue
-                    severity = 'INFO'
-                    message = f"Błąd przy próbie logowania z zaufanego IP: ({ip})"
+            elif ip_entry.status == 'TRUSTED':
+                #continue
+                severity = 'INFO'
+                message = f"Błąd przy próbie logowania z zaufanego IP: ({ip})"
             
             
             # 5. Stwórz obiekt Alert:
@@ -105,7 +104,11 @@ class LogAnalyzer:
             ).first()
 
             if existing_alert:
-                # Jeśli alert już jest - nie dodajemy nowego wiersza!
+                # Jeśli alert już jest - aktualizujemy jego severity (jeśli np. zmienił się status IP)
+                # ale nie dodajemy nowego wiersza!
+                if existing_alert.severity != severity:
+                    existing_alert.severity = severity
+                    existing_alert.message = message
                 continue # Przeskakujemy do następnego logu, nie dodajemy duplikatu
             
             # jezeli jeszcze nie istnieje:
